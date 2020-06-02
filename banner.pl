@@ -1,163 +1,215 @@
 symbolicOutput(0).  % set to 1 to see symbolic output only; 0 otherwise.
 
-%% The mafia has a lot gangsters for doing different tasks.
-%% These tasks are planned every 3 days (72h), according to a forecast
-%% of the tasks to be done every hour.
-%% No gangster can do two different tasks during the same hour or on two consecutive hours.
-%% Some gangsters are not available on certain hours.
-%% We want to plan all tasks (which gangster does what task when) and
-%% we want to find the minimal K such that no gangster works more than
-%% K consecutive hours.
+%% A factory produces banners using only a set of existing rectangular
+%% pieces.  Our goal is to find out how to use the minimum set of
+%% pieces that exactly match the design of the banner. Note that
+%% pieces can be rotated if necessary. Also, note that each piece can
+%% be used at most once.  That's why there can be several identical
+%% pieces in the input.
 
+%%%%%%%%%%%%%%%%%%%%% INPUT EXAMPLE:
 
-%% EXAMPLE OUTPUT:
-%% 
-%%                       10        20        30        40        50        60        70  
-%%               123456789012345678901234567890123456789012345678901234567890123456789012
-%% 
-%% gangster g01: ------------------------------p-------p-----p----p----p--------------p--
-%% gangster g02: ------p--p-p--------------p--ppp-----pp---pp-----p----p---p----p--------
-%% gangster g03: -p----p--p-p-p--p-------p-----pp-pp-p-pp-pppp--pp--p-pp-pppp--p-------p-
-%% gangster g04: -pp---p--p--pp----pp-p-pp-p-p-pppppp-cc-p--c----pppppp-p-c-p--ppp--p-p--
-%% gangster g05: pppppppppppppp--p-pp-p-ppppp-c--cc-p-cc-c-c-p--ppppppp-c-c-pppppppppppp-
-%% gangster g06: pp-c--c-c-cc-pp-p-pppppppppp-c--ccc-ccc-c-c-ppppp-cc-p-c-c-pppppp-cc-ppp
-%% gangster g07: -c-c-cc-c-cccc--ppp-c-pp-c-cccccccc-ccccccccc--c--ccccccccc-c--cc-cccc-p
-%% gangster g08: ccccccccc-cccc-p-c-cccc--c-ccccccccc-k-ccccccc-cccccccc-k-p-c-ccc-ccccc-
-%% gangster g09: k--k-c-k-cc-k--cccc-k-ccccc-k-c-k-c-kk-k-c-k-cccc-kk-cc-kk--cccccccccccc
-%% gangster g10: k--k-c-k--k-k-cc-kkkk-k--k-kkk-kk-k-kk-k-c-kkkk--kkk-kkkkk-c-kkkk--k--k-
-%% gangster g11: k-kkk--k--kkkk-k-kkkk-k-kk-kkkkkkkk-kk-kkk-kkkkkkkkk-kkkkk--kkkkkk-k--kk
-%% gangster g12: kkkkkkkkkkkkkkkkkk-kkkkkkkkkkkkkkkkkk-kkkkkkkkkkkkkkkkkk-kkkkkkkkkkkkkkk
+%% banner( [                             the x's define the design of the banner
+%% 	       [.,x,x,x,.,.,.,x,x,x,.],
+%% 	       [.,x,x,x,.,.,.,x,x,x,.],
+%% 	       [.,x,x,x,.,.,.,x,x,x,.],
+%% 	       [.,x,x,x,x,x,x,x,x,x,.],
+%% 	       [.,x,x,x,x,x,x,x,x,x,.],
+%% 	       [.,x,x,x,.,.,.,x,x,x,.],
+%% 	       [.,x,x,x,.,.,.,x,x,x,.],
+%% 	       [.,x,x,x,.,.,.,x,x,x,.]
+%% 	   ]).
+%% pieces([
+%% 	    [1,3,8],   % piece 1 is a 3 x 8 rectangle
+%% 	    [2,3,3],   % piece 2 is a 3 x 3 rectangle
+%% 	    [3,9,2],   % ...
+%% 	    [4,3,3],
+%% 	    [5,3,8],
+%% 	    [6,3,2],
+%% 	    [7,3,3],
+%% 	    [8,3,3],
+%% 	    [9,2,3],
+%% 	    [a,1,3]	    
+%% 	  ]).
 
+%% A possible solution using 6 pieces:
+%% .444...888.
+%% .444...888.
+%% .444...888.
+%% .333333333.
+%% .333333333.
+%% .a99...777.
+%% .a99...777.
+%% .a99...777.
 
-
-%%%%%%%%%%%%%%%%%%%%% INPUT:
-
-% example: 4 gangsters are needed for killing on hour 1, one gangster on hour 2, two gangsters on hour 3, etc.
-gangstersNeeded( killing,       [4,1,2,4,2,1,1,4,1,1,3,2,4,2,1,2,1,3,2,3,4,1,3,1,2,3,1,3,4,3,2,3,4,2,3,1,4,4,1,4,2,2,1,4,3,3,3,2,2,3,4,4,1,3,3,3,4,4,1,1,2,3,3,3,3,2,1,3,1,1,3,2] ).
-gangstersNeeded( countingMoney, [1,2,1,3,1,4,3,1,3,1,4,3,2,2,1,2,1,2,1,1,2,1,2,1,1,3,1,2,2,4,3,2,4,4,4,1,2,4,4,2,4,4,4,3,2,2,1,3,2,1,3,3,2,3,3,3,1,4,1,1,3,1,2,3,3,1,4,4,3,3,2,1] ).
-gangstersNeeded( politics,      [2,4,2,1,1,1,4,1,1,4,1,3,2,4,1,1,4,1,4,3,1,3,2,4,4,2,4,2,1,1,4,3,1,2,2,2,1,1,3,1,1,1,2,2,4,1,1,3,4,4,2,3,2,4,3,1,1,1,3,4,2,2,4,4,3,1,1,2,1,4,3,2] ).
-
-gangsters([g01,g02,g03,g04,g05,g06,g07,g08,g09,g10,g11,g12]).
-
-notAvailable(g01,[6,13,14,16,21,35,37,41,59]).
-notAvailable(g02,[14,34,40,45,48,52,58,65,70,72]).
-notAvailable(g03,[8,11,13,27,30,38,50,51,70]).
-notAvailable(g04,[4,12,16,17,26,30,42,45,48,55,71]).
-
-%%%%%%%%%%%%%%%%%%%%% END INPUT. %%%%%%%%%%%%%%%%%%%%%
-
+%% An optimal solution using 3 pieces:
+%% .555...111.
+%% .555...111.
+%% .555...111.
+%% .555666111.
+%% .555666111.
+%% .555...111.
+%% .555...111.
+%% .555...111.
+      	 
+:-include(input4).
 
 %%%%%% Some helpful definitions to make the code cleaner:
+piece(P):-                  pieces(L), member([P,_,_],L).
+pieceSize(P,W,H):-          pieces(L), member([P,W,H],L).
+widthBanner(W):-            banner(B), member(L,B), length(L,W),!.
+heightBanner(H):-           banner(B), length(B,H), !.
+contentsCellBanner(X,Y,C):- cell(X,Y), banner(B), heightBanner(H), Y1 is H-Y+1, nth1(Y1,B,L), nth1(X,L,C).
+cell(X,Y):-                 widthBanner(W), heightBanner(H), between(1,W,X), between(1,H,Y).
+numPieces(N):-              nth1(1,pieces(_),L),length(L, N),!.
 
-task(T):-        gangstersNeeded(T,_).
-needed(T,H,N):-  gangstersNeeded(T,L), nth1(H,L,N).
-gangster(G):-    gangsters(L), member(G,L).
-hour(H):-        between(1,72,H).
-blocked(G,H):-   notAvailable(G,L), member(H,L).
-available(G,H):- hour(H), gangster(G), \+blocked(G,H).
+getCells(Xstart, Ystart, X, Y, SizeW, SizeH):-
+    cell(Xstart, Ystart),
+    FinalX is Xstart + SizeW - 1,
+    FinalY is Ystart + SizeH - 1, 
+    contentsCellBanner(X, Y, x),
+    between(Xstart, FinalX, X),
+    between(Ystart, FinalY, Y).
 
-% We use (at least) the following types of symbolic propositional variables:
-%   1. does(G,T,H) means:  "gangster G does task T at hour H"     (MANDATORY)
-satVariable(does(G,T,H)):-gangster(G),task(T),hour(H).
-satVariable(descansa(G,H)):- gangster(G), hour(H).
-satVariable(intervalo(G,H,S)):- gangster(G),hour(H),between(0,72,S).
-satVariable(gh(G,H)):- gangster(G),hour(H).
-%   2. ...
+pieceCanStartHere(_,X, Y, SizeW, SizeH):-
+    contentsCellBanner(X, Y, x),
+    widthBanner(W),
+    heightBanner(H),
+    MaxW is W - SizeW + 1,
+    MaxH is H - SizeH + 1,
+    between(1, MaxW, X),
+    between(1, MaxH, Y),
+    findall(contentsCellBanner(X1,Y1, x), getCells(X, Y, X1, Y1, SizeW, SizeH), Lits),
+    Size is SizeW * SizeH,
+    length(Lits, Size).
 
-writeClauses(infinite):-!,writeClauses(5),!.
+% You can use the following types of symbolic propositional variables:
+satVariable(pieceCell(P,X,Y)):- piece(P),cell(X,Y).                              % means: "piece P fills cell [X,Y]" (note: [1,1] is the bottom-left cell of the banner (Careful: Mandatory variable. Otherwise, displaySol will not work)
+satVariable(rotated(P)):- piece(P).                                              % means: "piece P is rotated"
+satVariable(pieceStarts(P,X,Y)):- piece(P),cell(X,Y).                            % means: "bottom-left cell of piece P is in cell [X,Y]"
+satVariable(used(P)):- piece(P).                                                 % means: "piece P is used"
+
+
+writeClauses(infinite):- !, writeClauses(9),!.
 writeClauses(K):-
-    eachHourEachGangsterAtMostOneTask,    %gangster no puede hacer 2 tareas en una hora
-    gangstersNeededInHours,
-    defineDescansa,
-    unDescanso,
-    defineGH,
-    menysDeKHoresSeguides(K),
-    true,!.
-writeClauses(_):- told, nl, write('writeClauses failed!'), nl,nl, halt.
-defineGH :-
-    gangster(G), hour(H),task(T),
-    writeClause([-does(G,T,H), gh(G,H)]),
+    eachPieceAMO,
+    eachCellOnePiece,
+    ifStartsThenFill,
+    amoKPieces(K),
+    ifRotatedThenFill,
+    usedP,
+    ifUsedThenNotFills,
+    pieceCanBeRotated,
+    noIfStartsThenFills,
+    noIfRotatedThenFills,
+    true.
+writeClauses:- told, nl, write('writeClauses failed!'), nl,nl, halt.
+
+amoKPieces(K):-
+    findall(used(P),piece(P),Lits),
+    atMost(K,Lits),
     fail.
-defineGH.
+amoKPieces(_).
 
 
-menysDeKHoresSeguides(K):- 
-    findall(N, between(1, 72, N), L), 
-    gangster(G), append([_,LK,_], L), 
-    append([_,LK,_], L), length(LK, K1), K1 is K+1,
-    findall(-gh(G,H), (hour(H), member(H, LK)), Hores), 
-    atLeast(1, Hores),fail.
-menysDeKHoresSeguides(_).
-
-
-defineDescansa:-
-    gangster(G),hour(H),task(T),
-    writeClause([-does(G,T,H),-descansa(G,H)]),
-    fail.
-defineDescansa.
-
-unDescanso:-
-    gangster(G),task(T),
-    hour(H), H1 is H+1,
-    hour(H1),
-    writeClause([-does(G,T,H),descansa(G,H1),does(G,T,H1)]),
-    fail.
-unDescanso.
-
-gangstersNeededInHours:-
-    needed(T,H,N),
-    findall(does(G,T,H),available(G,H),Lits),
-    exactly(N,Lits),
-    fail.
-gangstersNeededInHours.
-
-
-eachHourEachGangsterAtMostOneTask:-
-    gangster(G),hour(H),
-    findall(does(G,T,H),task(T),Lits),
+eachPieceAMO:-
+    piece(P),
+    findall(pieceStarts(P,X,Y),contentsCellBanner(X,Y,x),Lits),
     atMost(1,Lits),
     fail.
-eachHourEachGangsterAtMostOneTask.
+eachPieceAMO.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+eachCellOnePiece:-
+    contentsCellBanner(X,Y,x),
+    findall(pieceCell(P,X,Y), piece(P), Lits),
+    exactly(1,Lits),  
+    fail.
+eachCellOnePiece.
 
-displaySol(M):- nl,nl,
-    write('                      10        20        30        40        50        60        70  '), nl,
-    write('              123456789012345678901234567890123456789012345678901234567890123456789012'), nl,
-    gangster(G), nl, write('gangster '), write(G), write(': '), hour(H), writeIfBusy(G,H,M), fail.
+pieceCanBeRotated:- 
+    pieceSize(P, SizeX, SizeY), 
+    findall(pieceStarts(P,X,Y), pieceCanStartHere(P, X, Y, SizeY, SizeX), Lits), 
+    expressOr(rotated(P), Lits), fail.
+pieceCanBeRotated.
 
-displaySol(M):-nl,nl,member(hourStart(G,H),M), 
-        write(G),write(' - '), write(H),nl,fail.
+ifStartsThenFill:-
+    pieceSize(P,W,H),
+    getCells(X, Y, Xs, Ys, W, H),
+    writeClause([-pieceStarts(P,X,Y),rotated(P),pieceCell(P,Xs,Ys)]),
+    fail.
+ifStartsThenFill.
+
+ifRotatedThenFill:-
+    pieceSize(P,W,H),
+    getCells(X, Y, Xs, Ys, H, W),
+    writeClause([-pieceStarts(P,X,Y),-rotated(P),pieceCell(P,Xs,Ys)]),
+    fail.
+ifRotatedThenFill.
+
+usedP:-
+    pieceSize(P,W,H),
+    findall(pieceStarts(P,X,Y),(pieceCanStartHere(P,X,Y,W,H);pieceCanStartHere(P,X,Y,H,W)),Lits),
+    expressOr(used(P),Lits),
+    fail.
+usedP.
+
+
+ifUsedThenNotFills:-
+    cell(X, Y),
+    piece(P),
+    writeClause([used(P), -pieceCell(P,X,Y)]), fail.
+ifUsedThenNotFills.
+
+
+noIfStartsThenFills:- 
+    pieceSize(P, SizeX, SizeY),  
     
-displaySol(_):- nl,nl,!.
-
-
-writeIfBusy(G,H,M):- member( does(G, killing,       H), M),  write('k'),!.
-writeIfBusy(G,H,M):- member( does(G, countingMoney, H), M),  write('c'),!.
-writeIfBusy(G,H,M):- member( does(G, politics,      H), M),  write('p'),!.
-writeIfBusy(_,_,_):- write('-'),!.
-
-%%% 4 compute solution
-costOfThisSolution(M,K):-
-    between(0,72,N), K is  72-N,
-    algunGangsterTreballaConsecutivament(K,M).
-
-algunGangsterTreballaConsecutivament(K,M):-
-    gangster(G),gangsterTreballaConsecutivament(G,K,M).
-
-gangsterTreballaConsecutivament(G,K,M):-
-    llistaHoresTreballades(G,M,L),hihaSubllistaHoresConsecutives(K,L).
-llistaHoresTreballades(G,M,L) :- findall(H, member(gh(G,H),M), L).
-hihaSubllistaHoresConsecutives(K,L):-
-    append([_,LK,_],L),length(LK,K),horesConsecutives(LK).
+    cell(X,Y),
+    cell(X1, Y1),
+    \+getCells(X, Y, X1, Y1, SizeX, SizeY), 
     
-horesConsecutives(LK) :- sort(LK, LKO), is_inc(LKO).
+    negate(pieceStarts(P,X,Y), NegStart),
+    writeClause([NegStart, rotated(P), -pieceCell(P,X1,Y1)]), fail.
+noIfStartsThenFills.
 
-is_inc([]).
-is_inc([_]).
-is_inc([X,Y|T]) :-
-   Y is X + 1,
-   is_inc([Y|T]).
+
+noIfRotatedThenFills:- 
+    pieceSize(P, SizeX, SizeY), 
+    
+    cell(X,Y),
+    cell(X1, Y1),
+    \+getCells(X, Y, X1, Y1, SizeY, SizeX), 
+    
+    negate(pieceStarts(P,X,Y), NegStart),
+    negate(rotated(P), NegRotated),
+    negate(pieceCell(P,X1,Y1), NegCell),
+    
+    writeClause([NegStart, NegRotated, NegCell]), fail.
+noIfRotatedThenFills.
+
+
+displaySol(M):-
+    widthBanner(W),
+    heightBanner(H),
+    between(1,H,YB),
+    nl,
+    Y is H-YB+1,
+    between(1,W,X),
+    writeCell(M,X,Y),
+    
+    fail.
+displaySol(_):-nl.
+
+
+
+writeCell(M,X,Y):- member(pieceCell(P,X,Y),M), !, write(P).
+writeCell(_,_,_):- write('.').
+
+
+costOfThisSolution(M,K):- 
+    findall(piece(P), member(used(P), M), Lits),
+    length(Lits, K), !.
+
 
 main:-  symbolicOutput(1), !, writeClauses(infinite), halt.   % print the clauses in symbolic form and halt
 main:-

@@ -44,9 +44,16 @@ writeClauses:-
     overlappingYear,
     creaYS,
     atMost6,
-    % creaSR,
+    noGaps,
     true.
 writeClauses:- told, nl, write('writeClauses failed!'), nl,nl, halt.
+
+noGaps :-
+    year(Y), slot(S), slot(S1), slot(S2), day(D),
+    slotOfDay(D,S), slotOfDay(D,S1), slotOfDay(D,S2), %alternativa: D is ceiling(S/12), D is ceiling(S1/12), D is ceiling(S2/12),
+    S1 < S, S2 > S,
+    atLeast(1, [ys(Y,S), -ys(Y,S1), -ys(Y,S2)]), fail.
+noGaps.
 
 creaYS:-
     year(Y),slot(S),
@@ -155,14 +162,103 @@ atMostOneCourseLecturePerDay.
 
 
 %%%%%%  3. DisplaySol: show the solution. Here M contains the literals that are true in the model:
-displaySol(M):- slot(S),course(C),room(R), lectureOfCourse(C,L),teacher(T),courseOfYear(Y,C),
-                member(cls(C,L,S), M),member(ct(C,T),M),member(cr(C,R),M),member(ts(T,S),M),escribeDia(S),
-                write('hora '),write(S),
-                write(' curso '),write(Y), 
-                write(' assignatura ' ), write(C),
-                write(' professor '),write(T), 
-                write(' aula '),write(R),nl,
-                fail.
+extraBlank(N):- 
+    N < 10, !, write(' ').
+extraBlank(_).
+
+drawTail(Y, Hour):-
+    Hour > 48, 
+    write('  Curs: '), write(Y), nl.
+drawTail(_, _).
+
+drawCell(Y, S, M):-
+    member(cls(C,L,S), M),                   %% -------- ADAPTA la SAT variable cls(C,L,S)
+    assig(Y, C, _, _, _), !,
+    write(' '), extraBlank(C), write(C), write(' - '),
+    extraBlank(L), write(L), 
+    write('  ['), member(cr(C,R), M),        %% -------  ADAPTA la SAT variable cr(C,R)
+    write('A:'), extraBlank(R), write(' '), write(R), write(']'),
+    write('  ['), member(ct(C,T), M),        %% -------  ADAPTA la SAT variable ct(C,T)
+    write('P:'), extraBlank(T), write(' '), write(T), write(']'),
+    write(' ').
+drawCell(_, _, _):- 
+    write('                           ').    
+
+drawRow(Row, _):-
+    1 is Row mod 2,
+    H is Row // 2 + 8, 
+    extraBlank(H), 
+    write(' '), write(H), write(':00 '), 
+    between(1, 141, _), write('='), 
+    fail.
+drawRow(Row, _):-
+    1 is Row mod 2, !, nl.
+
+drawRow(Row, M):-
+    year(Y),
+    write('       |'),
+    between(0, 4, Day), 
+    Hour is Row // 2 + Day * 12,
+    drawCell(Y, Hour, M), 
+    write('|'), 
+    drawTail(Y, Hour), 
+    fail.
+drawRow(_, _).
+
+drawHeader:-
+    nl, nl, 
+    write(' Format de sortida: Assignatura - Hora [A: Aula] [P: Professor]'), 
+    nl, nl, 
+    write('                 Dilluns                     Dimarts                     dimecres                     Dijous                    Divendres').
+
+displaySchedule(M):-
+    drawHeader, nl,
+    between(1, 25, Row), 
+    drawRow(Row, M), 
+    fail.
+
+drawHeaderYear(Y):-
+    nl, nl, 
+    write('----------------------------------------------------------------------------------------------------------------------------------------------------'),
+    nl,
+    write(' Horari del curs '), write(Y),
+    nl,
+    write(' Format de sortida: Assignatura - Hora [A: Aula] [P: Professor]'), 
+    nl, nl, 
+    write('                 Dilluns                     Dimarts                     dimecres                     Dijous                    Divendres').
+
+drawTailYear(Hour):-
+    Hour > 48, nl.
+drawTailYear(_, _).
+
+drawRowYear(Row, _, _):-
+    1 is Row mod 2,
+    H is Row // 2 + 8, 
+    extraBlank(H), 
+    write(' '), write(H), write(':00 '), 
+    between(1, 141, _), write('='), 
+    fail.
+drawRowYear(Row, _, _):-
+    1 is Row mod 2, !, nl.
+drawRowYear(Row, Y, M):-
+    write('       |'),
+    between(0, 4, Day), 
+    Hour is Row // 2 + Day * 12,
+    drawCell(Y, Hour, M), 
+    write('|'),
+    drawTailYear(Hour), 
+    fail.
+drawRowYear(_, _, _).
+
+displayScheduleYear(Y,M):-
+    drawHeaderYear(Y), nl,
+    between(1, 25, Row), 
+    drawRowYear(Row, Y, M), 
+    fail.
+
+displaySol(M):- displaySchedule(M), fail.
+displaySol(M):- year(Y), displayScheduleYear(Y,M), fail.
+displaySol(_).
 
 % displaySol(M):- nl,teacher(T),slot(S),course(C),lectureOfCourse(C,L),
 %                 member(ts(T,S),M),member(cls(C,L,S), M),member(ct(C,T),M),
@@ -173,11 +269,6 @@ escribeDia(S)           :- S < 25,S>12, write('Martes: ').
 escribeDia(S)           :- S < 37, S>24,write('Miercoles: ').
 escribeDia(S)           :- S < 49,S>36, write('Jueves: ').
 escribeDia(S)           :- S < 61,S>48, write('Viernes: ').
-
-
-
-
-
 
 
 
